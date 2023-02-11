@@ -1,6 +1,6 @@
 import hashlib
 from faker import Faker
-from random import randint
+from random import uniform
 fake = Faker('ru')
 
 
@@ -18,8 +18,6 @@ class IdCounter:
 
 
 class Password:
-    def __init__(self, password):
-        self.password = self.get_hash(password)
 
     @staticmethod
     def get_hash(password):
@@ -32,23 +30,20 @@ class Password:
             raise ValueError("Длина пароля не менее 8 символов")
         return hashlib.sha256(password.encode()).hexdigest()
 
+
+    @staticmethod
     def check(self, enter_pass):
-        if self.password == self.get_hash(enter_pass):
-            return True
-        else:
-            return False
+        return True if enter_pass == self.get_hash(enter_pass) else False
 
 
 class Product:
     _id_counter = IdCounter()
 
-    def __init__(self, name=None):
-        self._name = ''.join(fake.color_name()).title()
-        if name != None:
-            self._name = name
+    def __init__(self, name, price, rating):
+        self._name = name  # self._name = ''.join(fake.color_name()).title()
         self._id = self._id_counter.get_id()
-        self.price = str(randint(1, 100)) + '$'
-        self.rating = randint(1, 100)
+        self.price = price   # str(randint(1, 100)) + '$'
+        self.rating = rating   # randint(1, 100)
 
     def __str__(self):
         return f'{self._id}_{self._name}'
@@ -64,7 +59,6 @@ class Product:
     def name(self, new_name):
         self._name = new_name
 
-        # добавить проверки
 
 class Cart:
     def __init__(self, cart=None):
@@ -83,15 +77,16 @@ class Cart:
     def del_from_data(self, index):
         del self.cart[index-1]
 
-class User(Password):
+
+class User:
     _id_counter = IdCounter()
     _user_cart = Cart()
+    _password = Password()
 
     def __init__(self, username, password):
-        super().__init__(password)
         self._user_id = self._id_counter.get_id()
         self._username = self.valid_username(username)
-        self.password = self.get_hash(password)
+        self._password = self._password.get_hash(password)
         self._user_cart = self._user_cart.get_cart()
 
     def __str__(self):
@@ -112,39 +107,32 @@ class User(Password):
         return username
 
 
-class Store(User, Cart):
+class Store:
     _user_cart = Cart()
+    _id_counter = IdCounter()
+    _password = Password()
+    _user = User(input("Введите имя пользователя: "), input("Введите пароль: "))
 
-    def __init__(self, username=None, password=None):
-        self._username = self.valid_username(input("Введите имя пользователя: "))
-        if username is not None:
-            self._username = username
-        self._password = self.get_hash(input("Введите пароль: "))
-        if password is not None:
-            self._username = password
+    def __init__(self):
         self.cart = self._user_cart.get_cart()
 
     def add_random(self):
-        self.add_in_cart(''.join(fake.color_name()).title())
+        self._user_cart.add_in_cart(''.join(fake.color_name()).title())
+
+
+class ProductGenerator:
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        product = Product(''.join(fake.color_name()).title(),
+                          str(round(uniform(1, 100), 2)) + '$',
+                          round(uniform(0, 5), 2))
+        return product
+
 
 if __name__ == '__main__':
-    product1 = Product()
-    print(product1.__repr__())
-    product2 = Product()
-    print(product2.__repr__())
-    product3 = Product()
-    print(product3.__repr__())
-
-    cart1 = Cart(['Красный', 'Синий', 'Зелёный'])
-    print(cart1.cart)
-    cart1.add_in_cart('Чёрный')
-    print(cart1.cart)
-    cart1.del_from_data(2)
-    print(cart1.cart)
-
-    user = User(str(fake.name()), '1234abcd')
-    print(user.__repr__())
-
-    store = Store()
-    store.add_random()
-    print(store.get_cart())
+    prod = ProductGenerator()
+    for n in range(5):
+        print(prod.__next__().__dict__)
